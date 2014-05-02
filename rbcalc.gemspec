@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Rbcalc::VERSION
   spec.authors       = ["Achilles Charmpilas"]
   spec.email         = ["ac@humbuckercode.co.uk"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
+  spec.description   = %q{Ruby bindings for Piotr Beling's Bridge Calculator}
+  spec.summary       = %q{Ruby bindings for Piotr Beling's Bridge Calculator}
   spec.homepage      = ""
   spec.license       = "MIT"
 
@@ -19,5 +19,8 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler", "~> 1.3"
+  spec.add_dependency "RubyInline", "~> 3.12"
   spec.add_development_dependency "rake"
+  spec.add_development_dependency "rspec"
+  spec.add_development_dependency "fuubar"
 end
