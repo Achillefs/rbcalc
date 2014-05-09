@@ -21,7 +21,7 @@ module Rbcalc
         raise ArgumentError, 'Rbcalc needs at least the hands, dealer direction and trump suit'
       end
       
-      self.tricks_made = solve(hands, "#{played.to_s} e", trump_suit, leader)
+      self.tricks_made = solve(hands, played.to_s, trump_suit, leader)
     end
     
     inline do |b|
