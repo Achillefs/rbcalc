@@ -31,7 +31,7 @@ module Rbcalc
     case Rbcalc.os
     when :macosx
       # assign a new ID to the library os that xtools can get to id
-      `/usr/bin/install_name_toolid #{vpath}/libbcalcdds.dylib vendor/bcalc/libbcalcdds.dylib`
+      `/usr/bin/install_name_tool -id #{vpath}/libbcalcdds.dylib vendor/bcalc/libbcalcdds.dylib`
     when :linux
       # ok
     else
