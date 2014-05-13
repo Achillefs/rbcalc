@@ -25,7 +25,7 @@ module Rbcalc
     end
     
     inline do |b|
-      b.add_compile_flags "-L#{Pathname.new(__FILE__).dirname.join('..','..','vendor','bcalc')} -l bcalcdds"
+      b.add_compile_flags "-L#{Pathname('.').join('vendor','bcalc')} -l bcalcdds"
       b.include '<stdio.h>'
       b.include '<bcalcdds.h>'
       b.c %{int solve(const char * hands, const char * played, int strain, int leader){
