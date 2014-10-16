@@ -4,6 +4,12 @@ describe Rbcalc do
   it 'can detect os' do # my dev machine
     Rbcalc.os.should eq(:macosx)
   end
+  
+  it 'accepts declarer and calculates leader' do
+    c = Rbcalc.new(hands: 'S2579H38AD458QC26,S4H24569TJQKD9CJK,S36TQH7D23TKC379Q,SAKJ8HDAJ76CAT854', trump_suit: 2, declarer: 2)
+    c.leader.should eq(1)
+  end
+  
   subject { 
     Rbcalc.new(hands: 'S2579H38AD458QC26,S4H24569TJQKD9CJK,S36TQH7D23TKC379Q,SAKJ8HDAJ76CAT854', trump_suit: 2, leader: 0)
   }

@@ -4,11 +4,12 @@ require 'fileutils'
 require 'inline'
 
 class Rbcalc
-  VERSION = "0.2.0"
-  attr_accessor :solver, :leader, :trump_suit, :hands, :ns_score, :ew_score
+  VERSION = "0.2.1"
+  attr_accessor :solver, :leader, :declarer, :trump_suit, :hands, :ns_score, :ew_score
   
   def initialize params = {}
     params.map { |k,v| self.send(:"#{k}=",v) }
+    self.leader = declarer_to_leader(declarer.to_i) if self.declarer != nil
     unless hands.nil? || hands.empty? || leader.nil? || trump_suit.nil?
       self.solver = create_solver('LIN', hands.to_s, trump_suit, leader)
     end
