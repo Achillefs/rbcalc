@@ -1,138 +1,49 @@
 require 'rbconfig'
 require 'pathname'
 require 'fileutils'
-require 'inline'
+
+class RbcalcException < StandardError
+end
 
 class Rbcalc
-  VERSION = "0.2.1"
-  attr_accessor :solver, :leader, :declarer, :trump_suit, :hands, :ns_score, :ew_score
+  VERSION = "0.4.0"
+  attr_accessor :leader, :trump, :hands, :played
   
   def initialize params = {}
     params.map { |k,v| self.send(:"#{k}=",v) }
-    self.leader = declarer_to_leader(declarer.to_i) if self.declarer != nil
-    unless hands.nil? || hands.empty? || leader.nil? || trump_suit.nil?
-      self.solver = create_solver('LIN', hands.to_s, trump_suit, leader)
-    end
-  end
-  
-  def solution
-    { ns: self.ns_score, ew: self.ew_score }
+    @tricks = []
   end
   
   def solve!
-    # fails if no solver exists
-    raise StandardError, 'solver not initialized' unless solver.is_a?(Fixnum)
-    # N E S W
-    tricks = (0..3).map { |k| tricks_taken(k) }
-    self.ns_score = tricks[0] + tricks[2]
-    self.ew_score = tricks[1] + tricks[3]
-    
-    case now_playing
-    when 0,2
-      self.ns_score+= tricks_to_take
-      self.ew_score = 13 - self.ns_score
-    when 1,3
-      self.ew_score+= tricks_to_take
-      self.ns_score = 13 - self.ew_score
+    cmd = [self.class.home.join('../bin/bcalconsole')]
+    cmd << "-c #{hands}"
+    cmd << "-d lin -t a"
+    case leader
+    when 0
+      cmd << "-l n"
+    when 1
+      cmd << "-l e"
+    when 2
+      cmd << "-l s"
+    when 3
+      cmd << "-l w"
     end
     
-    true
-  end
-  
-  def last_error; _last_error(solver); end
-  def cards_left; _cards_left(solver); end
-  def played_count; _played_count(solver); end
-  def now_playing; _now_playing(solver); end
-  def destroy; _destroy(solver); end
-  def tricks_taken(direction); _tricks_taken(solver,direction); end
-  def all_tricks_taken
-    (0..3).map { |i| tricks_taken(i) }
-  end
-  def tricks_to_take; _tricks_to_take(solver); end
-  def exec(cmd); _exec(solver, cmd); end
-  def trump; _trump(solver); end
-  
-  inline do |b|
-    b.add_compile_flags "-L#{Pathname(__FILE__).dirname.join('..','vendor','bcalc')} -l bcalcdds"
-    b.include '<stdio.h>'
-    b.include "<#{Pathname(__FILE__).dirname.join('..','vendor','bcalc')}/bcalcdds.h>"
-    
-    b.c %{int next_hand(int hand, int delta){
-      return bcalc_nextHand(hand, delta);
-    }}
-    
-    b.c %{int declarer_to_leader(int declarer){
-      return bcalc_declarerToLeader(declarer);
-    }}
-    
-    b.c %{int version(){
-      return bcalc_runtimeVersion();
-    }}
-    
-    b.c %{long create_solver(const char* format, const char* hands, int strain, int leader) {
-      return bcalcDDS_new(format, hands, strain, leader);
-    }}
-    
-    b.c %{int _trump(long solver){
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      return bcalcDDS_getTrump(dds);
-    }}
-    
-    b.c %{void _exec(long solver, const char* cmds){
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      bcalcDDS_exec(dds,cmds);
-    }}
-    
-    b.c %{int _tricks_to_take(long solver){
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      return bcalcDDS_getTricksToTake(dds);
-    }}
-    
-    b.c %{int _tricks_taken(long solver, int direction){
-      int result[4];
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      bcalcDDS_getTricksTaken(dds, result);
-      return result[direction];
-    }}
-    
-    b.c %{void _destroy(long solver){
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      bcalcDDS_delete(dds);
-    }}
-    
-    b.c %{int _now_playing(long solver){
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      return bcalcDDS_getPlayerToPlay(dds);
-    }}
-    
-    b.c %{int _played_count(long solver){
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      return bcalcDDS_getPlayedCardsCount(dds);
-    }}
-    
-    b.c %{int _cards_left(long solver){
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      return bcalcDDS_getCardsLeftCount(dds);
-    }}
-    
-    b.c %{int _last_error(long solver){
-      struct BCalcDDS* dds;
-      dds = (struct BCalcDDS*)solver;
-      return bcalcDDS_getLastError(dds);
-    }}
+    resp = 
+    if resp = system(cmd.join(' '))
+      parse_binout(resp)
+    else
+      raise RbcalcException, "Execution failed. OS not supported?"
+    end
   end
   
   #### UTILITY METHODS ####
   def self.home
     Pathname.new(__FILE__).dirname
+  end
+  
+  def solution
+    @tricks
   end
   
   def self.os
@@ -148,26 +59,49 @@ class Rbcalc
       when /solaris|bsd/
         :unix
       else
-        raise Error::WebDriverError, "unknown os: #{host_os.inspect}"
+        raise RbcalcException, "unknown os: #{host_os.inspect}"
       end
     )
   end
   
   def self.init!
-    vpath = self.home.join('..','vendor','bcalc')
     # prepare library for linking
     case Rbcalc.os
-    when :macosx
-      # assign a new ID to the library os that xtools can get to id
-      `/usr/bin/install_name_tool -id #{vpath}/libbcalcdds.dylib #{vpath}/libbcalcdds.dylib`
-    when :linux
+    when :linux, :macosx, :unix
       # ok
     else
-      raise Error::WebDriverError, "Rbcalc cannot currently run on #{Rbcalc.os}"
+      raise RbcalcException, "Rbcalc cannot currently run on #{Rbcalc.os}"
     end
   end
   
-  
+  private
+  # we want to end up with a normalized array of scores per direction
+  # that can easily match our Bridge gem format
+  def parse_binout out
+    # split output by line and then by spaces.
+    # We end up with something like this:
+    # [["N", "3", "5", "2", "7", "3"],
+    # ["S", "3", "6", "2", "7", "3"],
+    # ["E", "5", "1", "6", "1", "1"],
+    # ["W", "5", "1", "6", "1", "1"]]
+    out.split("\n").map { |l| l.split.map(&:strip) }.each do |row|
+      dir = row.delete_at(0)
+      idx = nil
+      case dir
+      when 'N'
+        idx = 0
+      when 'S'
+        idx = 2
+      when 'E'
+        idx = 1
+      when 'W'
+        idx = 3
+      end
+      @tricks[idx] = row.map(&:to_i)
+    end
+    
+    @tricks
+  end
 end
 
 Rbcalc.init!
