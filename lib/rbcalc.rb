@@ -17,7 +17,7 @@ class Rbcalc
   def solve!
     cmd = [self.class.home.join('../bin/bcalconsole')]
     cmd << "-c #{hands}"
-    cmd << "-d lin -t a"
+    cmd << "-d lin -t a -q"
     case leader
     when 0
       cmd << "-l n"
@@ -29,7 +29,10 @@ class Rbcalc
       cmd << "-l w"
     end
     
-    resp = 
+    cmd << "-e '#{played} e'"
+    
+    puts cmd.join(' ')
+    
     if resp = system(cmd.join(' '))
       parse_binout(resp)
     else
