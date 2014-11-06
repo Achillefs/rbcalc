@@ -6,7 +6,7 @@ class RbcalcException < StandardError
 end
 
 class Rbcalc
-  VERSION = "0.4.0"
+  VERSION = "0.4.2"
   attr_accessor :leader, :trump, :hands, :played
   
   def initialize params = {}
@@ -33,7 +33,7 @@ class Rbcalc
     
     #puts cmd.join(' ')
     
-    if resp = system(cmd.join(' '))
+    if resp = `#{cmd.join(' ')}`
       parse_binout(resp)
     else
       raise RbcalcException, "Execution failed. OS not supported?"
