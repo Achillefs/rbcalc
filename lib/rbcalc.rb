@@ -31,7 +31,7 @@ class Rbcalc
     
     cmd << "-e '#{played} e'"
     
-    puts cmd.join(' ')
+    #puts cmd.join(' ')
     
     if resp = system(cmd.join(' '))
       parse_binout(resp)
