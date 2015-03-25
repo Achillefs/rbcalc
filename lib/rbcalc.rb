@@ -103,7 +103,7 @@ class Rbcalc
       @tricks[idx] = row.map(&:to_i)
     end
     
-    @tricks
+    @tricks.compact
   end
 end
 
