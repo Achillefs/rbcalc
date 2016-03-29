@@ -5,11 +5,14 @@ require 'inline'
 
 class Rbcalc
   VERSION = "0.2.1"
-  attr_accessor :solver, :leader, :declarer, :trump_suit, :hands, :ns_score, :ew_score
+  attr_accessor :hands, :trump_suit, :leader, :played
+  attr_accessor :solver, :declarer, :ns_score, :ew_score
   
   def initialize params = {}
     params.map { |k,v| self.send(:"#{k}=",v) }
-    self.leader = declarer_to_leader(declarer.to_i) if self.declarer != nil
+    if leader == nil && declarer != nil
+      self.leader = declarer_to_leader(declarer.to_i)
+    end
     unless hands.nil? || hands.empty? || leader.nil? || trump_suit.nil?
       self.solver = create_solver('LIN', hands.to_s, trump_suit, leader)
     end
@@ -22,6 +25,10 @@ class Rbcalc
   def solve!
     # fails if no solver exists
     raise StandardError, 'solver not initialized' unless solver.is_a?(Fixnum)
+    
+    # go through the cards played
+    
+    
     # N E S W
     tricks = (0..3).map { |k| tricks_taken(k) }
     self.ns_score = tricks[0] + tricks[2]
