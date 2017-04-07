@@ -24,7 +24,7 @@ class Rbcalc
   
   def solve!
     # fails if no solver exists
-    raise StandardError, 'solver not initialized' unless solver.is_a?(Fixnum)
+    raise StandardError, 'solver not initialized' unless solver.is_a?(Integer)
     # play given moves
     self.exec(played) unless played.nil?
     
